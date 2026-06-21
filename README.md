@@ -4,9 +4,14 @@ Taşınabilir, minimal ve **Go + YAML/OpenAPI** odaklı Neovim yapılandırması
 `lazy.nvim` ile yönetilir, Neovim'in **native LSP API**'sini (0.11+) kullanır.
 Tek komutla **macOS / Linux / Raspberry Pi** üzerine kurulur.
 
+**Desteklenen mimariler:** macOS (Intel + Apple Silicon), Linux x86_64 ve arm64
+— **64-bit Raspberry Pi OS (arm64) dahil**, ekstra adım gerektirmez. 32-bit Pi
+(armv7l) için resmi Neovim ikilisi olmadığından kaynaktan derleme gerekir
+(64-bit OS önerilir).
+
 ```bash
-git clone <bu-repo> ~/neovim-setup
-cd ~/neovim-setup
+git clone https://github.com/ensarkovankaya/nvim-setup.git ~/nvim-setup
+cd ~/nvim-setup
 ./install.sh
 ```
 
@@ -98,7 +103,8 @@ Script idempotent'tir (tekrar çalıştırmak güvenli — kurulu olanı atlar).
 04. **Neovim ≥ 0.11** —
 
     - macOS: `brew install neovim`
-    - Linux x86_64 / arm64: GitHub'dan resmi tarball (`/opt/nvim`, `/usr/local/bin/nvim` symlink)
+    - Linux x86_64 / arm64: GitHub'dan resmi tarball (`/opt/nvim`, `/usr/local/bin/nvim` symlink).
+      **64-bit Raspberry Pi OS (arm64) buraya girer ve birinci sınıf desteklenir.**
     - 32-bit Pi (armv7l): resmi ikili yok → dağıtım paketi denenir, sürüm
       yetersizse kaynaktan derleme uyarısı verir.
       Sürüm < 0.11 ise kurulum durur (native LSP API çalışmaz).
@@ -256,6 +262,8 @@ ______________________________________________________________________
   `wl-clipboard` (Wayland) kurun. Headless/SSH'da Neovim'in OSC52
   desteğini kullanın: `vim.g.clipboard` için OSC52 ayarı.
 - **32-bit Raspberry Pi'de Neovim eski** → resmi armv7 ikilisi yok; kaynaktan
-  derleyin: <https://github.com/neovim/neovim/blob/master/BUILD.md>.
+  derleyin: <https://github.com/neovim/neovim/blob/master/BUILD.md>. **Öneri:
+  64-bit Raspberry Pi OS (arm64) kullanın** — orada resmi ikili var, ekstra
+  adım gerekmez.
 - **Yanlış config yüklendi** → eski kurulum `~/.config/nvim.bak.<tarih>`'e
   yedeklenir; gerekirse geri alın.
