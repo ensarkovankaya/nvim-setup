@@ -1,0 +1,11 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editör/geçici
+*.swp
+*~
+
+# Neovim runtime (config repoda; runtime state repoda DEĞİL)
+nvim/lazy/
+nvim/.luarc.json
