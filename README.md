@@ -1,13 +1,13 @@
 # Neovim Setup
 
-Taşınabilir, minimal ve **Go + YAML/OpenAPI** odaklı Neovim yapılandırması.
-`lazy.nvim` ile yönetilir, Neovim'in **native LSP API**'sini (0.11+) kullanır.
-Tek komutla **macOS / Linux / Raspberry Pi** üzerine kurulur.
+A portable, minimal, **Go + YAML/OpenAPI**-focused Neovim configuration.
+Managed with `lazy.nvim`, using Neovim's **native LSP API** (0.11+).
+Installs on **macOS / Linux / Raspberry Pi** with a single command.
 
-**Desteklenen mimariler:** macOS (Intel + Apple Silicon), Linux x86_64 ve arm64
-— **64-bit Raspberry Pi OS (arm64) dahil**, ekstra adım gerektirmez. 32-bit Pi
-(armv7l) için resmi Neovim ikilisi olmadığından kaynaktan derleme gerekir
-(64-bit OS önerilir).
+**Supported architectures:** macOS (Intel + Apple Silicon), Linux x86_64 and
+arm64 — **including 64-bit Raspberry Pi OS (arm64)**, with no extra steps. For
+32-bit Pi (armv7l) there is no official Neovim binary, so a source build is
+required (64-bit OS recommended).
 
 ```bash
 git clone https://github.com/ensarkovankaya/nvim-setup.git ~/nvim-setup
@@ -17,253 +17,253 @@ cd ~/nvim-setup
 
 ______________________________________________________________________
 
-## İçindekiler
+## Table of contents
 
-- [Mimari](#mimari)
-- [Önkoşullar](#%C3%B6nko%C5%9Fullar)
-- [Hızlı kurulum](#h%C4%B1zl%C4%B1-kurulum)
-- [install.sh ne yapıyor? (adım adım)](#installsh-ne-yap%C4%B1yor-ad%C4%B1m-ad%C4%B1m)
-- [Elle kurulum](#elle-kurulum-script-kullanmadan)
-- [Pluginler — ne işe yarıyor?](#pluginler--ne-i%C5%9Fe-yar%C4%B1yor)
-- [LSP sunucuları](#lsp-sunucular%C4%B1)
-- [Kısayollar (keymaps)](#k%C4%B1sayollar-keymaps)
-- [Güncelleme](#g%C3%BCncelleme)
-- [Sorun giderme](#sorun-giderme)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick install](#quick-install)
+- [What does install.sh do? (step by step)](#what-does-installsh-do-step-by-step)
+- [Manual install (without the script)](#manual-install-without-the-script)
+- [Plugins — what does each do?](#plugins--what-does-each-do)
+- [LSP servers](#lsp-servers)
+- [Keymaps](#keymaps)
+- [Updating](#updating)
+- [Troubleshooting](#troubleshooting)
 
 ______________________________________________________________________
 
-## Mimari
+## Architecture
 
 ```
 nvim/
-├── init.lua                 # giriş noktası: 3 modülü require eder
-├── lazy-lock.json           # plugin sürüm kilidi (tekrarlanabilir kurulum)
+├── init.lua                 # entry point: requires the 3 modules
+├── lazy-lock.json           # plugin version lock (reproducible installs)
 └── lua/config/
-    ├── options.lua          # editör ayarları (numara, tab, clipboard…)
-    ├── keymaps.lua          # tuş atamaları (leader = <Space>)
-    └── plugins.lua          # plugin listesi + plugin/LSP kurulumları
+    ├── options.lua          # editor settings (numbers, tabs, clipboard…)
+    ├── keymaps.lua          # key mappings (leader = <Space>)
+    └── plugins.lua          # plugin list + plugin/LSP setup
 ```
 
-Yapı bilinçli olarak küçük: tek bir `plugins.lua` dosyası hem plugin tanımlarını
-hem de kurulum (`setup`) çağrılarını ve LSP yapılandırmasını içerir.
+The structure is intentionally small: a single `plugins.lua` file holds both the
+plugin declarations and the `setup` calls plus the LSP configuration.
 
 ______________________________________________________________________
 
-## Önkoşullar
+## Prerequisites
 
-Aşağıdakilerin tamamını `install.sh` otomatik kurar. Elle kuracaksanız:
+`install.sh` installs all of these automatically. If installing manually:
 
-| Bağımlılık                  | Neden gerekli                                            |
-| --------------------------- | -------------------------------------------------------- |
-| **Neovim ≥ 0.11**           | `vim.lsp.config` / `vim.lsp.enable` native API'si        |
-| **git**                     | lazy.nvim ve eklentilerin klonlanması, fugitive/diffview |
-| **ripgrep (`rg`)**          | Telescope `live_grep` (metin araması)                    |
-| **fd**                      | Telescope `find_files` (hızlı dosya bulma)               |
-| **C derleyici** (gcc/clang) | treesitter parser derlemesi                              |
-| **lazygit**                 | `lazygit.nvim` git arayüzü                               |
-| **Node.js + npm**           | `yaml-language-server` kurulumu                          |
-| **Go**                      | `gopls` (Go LSP) kurulumu                                |
-| **Nerd Font**               | nvim-tree / lualine ikon glifleri                        |
-| Pano (Linux)                | `xclip`/`wl-clipboard` — `clipboard=unnamedplus` için    |
+| Dependency                 | Why it's needed                                      |
+| -------------------------- | ---------------------------------------------------- |
+| **Neovim ≥ 0.11**          | `vim.lsp.config` / `vim.lsp.enable` native API       |
+| **git**                    | Cloning lazy.nvim and plugins, fugitive/diffview     |
+| **ripgrep (`rg`)**         | Telescope `live_grep` (text search)                  |
+| **fd**                     | Telescope `find_files` (fast file finding)           |
+| **C compiler** (gcc/clang) | Building treesitter parsers                          |
+| **lazygit**                | `lazygit.nvim` git UI                                |
+| **Node.js + npm**          | Installing `yaml-language-server`                    |
+| **Go**                     | Installing `gopls` (Go LSP)                          |
+| **Nerd Font**              | nvim-tree / lualine icon glyphs                      |
+| Clipboard (Linux)          | `xclip`/`wl-clipboard` — for `clipboard=unnamedplus` |
 
 ______________________________________________________________________
 
-## Hızlı kurulum
+## Quick install
 
 ```bash
-./install.sh                 # her şeyi kur (önerilen)
-./install.sh --copy          # config'i symlink yerine kopyala
-./install.sh --no-font       # Nerd Font kurma
-./install.sh --skip-deps     # sistem paketlerini atla, sadece config + LSP
+./install.sh                 # install everything (recommended)
+./install.sh --copy          # copy the config instead of symlinking
+./install.sh --no-font       # skip the Nerd Font
+./install.sh --skip-deps     # skip system packages, config + LSP only
 ./install.sh --help
 ```
 
-> **Symlink vs copy:** Varsayılan **symlink** — `~/.config/nvim`, bu repodaki
-> `nvim/` klasörüne bağlanır. Böylece repo "tek doğru kaynak" olur; `git pull`
-> ile değişiklikler anında geçerli olur. Cihaza bağımlı/kalıcı bir kopya
-> istiyorsanız `--copy` kullanın.
+> **Symlink vs copy:** Default is **symlink** — `~/.config/nvim` links to the
+> `nvim/` folder in this repo. This makes the repo the single source of truth;
+> `git pull` applies changes instantly. Use `--copy` if you want a
+> device-local/persistent copy instead.
 
 ______________________________________________________________________
 
-## install.sh ne yapıyor? (adım adım)
+## What does install.sh do? (step by step)
 
-Script idempotent'tir (tekrar çalıştırmak güvenli — kurulu olanı atlar).
+The script is idempotent (safe to re-run — it skips what's already installed).
 
-01. **Platform tespiti** — `uname` ile OS (macOS/Linux), `/etc/os-release` ve
-    `/proc/cpuinfo` ile dağıtım + Raspberry Pi, `uname -m` ile mimari
-    (x86_64/arm64/armv7l) ve paket yöneticisi (brew/apt/dnf/pacman/zypper).
+01. **Platform detection** — OS (macOS/Linux) via `uname`, distro + Raspberry Pi
+    via `/etc/os-release` and `/proc/cpuinfo`, architecture (x86_64/arm64/armv7l)
+    via `uname -m`, and the package manager (brew/apt/dnf/pacman/zypper).
 
-02. **Homebrew** (yalnız macOS) — yoksa kurar.
+02. **Homebrew** (macOS only) — installs it if missing.
 
-03. **Sistem bağımlılıkları** — `git curl ripgrep fd` + derleyici (build-essential
-    / base-devel / gcc) + Linux'ta pano araçları (`xclip`, `wl-clipboard`) ve
-    `fontconfig`. Debian/Ubuntu'da paket `fd-find` olarak gelir, ikili adı
-    `fdfind`'dir; script `~/.local/bin/fd` symlink'i oluşturur.
+03. **System dependencies** — `git curl ripgrep fd` + a compiler (build-essential
+    / base-devel / gcc) + on Linux the clipboard tools (`xclip`, `wl-clipboard`)
+    and `fontconfig`. On Debian/Ubuntu the package is `fd-find` and the binary is
+    `fdfind`; the script creates a `~/.local/bin/fd` symlink.
 
 04. **Neovim ≥ 0.11** —
 
     - macOS: `brew install neovim`
-    - Linux x86_64 / arm64: GitHub'dan resmi tarball (`/opt/nvim`, `/usr/local/bin/nvim` symlink).
-      **64-bit Raspberry Pi OS (arm64) buraya girer ve birinci sınıf desteklenir.**
-    - 32-bit Pi (armv7l): resmi ikili yok → dağıtım paketi denenir, sürüm
-      yetersizse kaynaktan derleme uyarısı verir.
-      Sürüm < 0.11 ise kurulum durur (native LSP API çalışmaz).
+    - Linux x86_64 / arm64: official tarball from GitHub (`/opt/nvim`, symlinked to
+      `/usr/local/bin/nvim`). **64-bit Raspberry Pi OS (arm64) lands here and is
+      first-class supported.**
+    - 32-bit Pi (armv7l): no official binary → the distro package is tried; if the
+      version is too old it warns to build from source.
+      If the version is < 0.11 the install stops (native LSP API won't work).
 
-05. **lazygit** — macOS/Arch'ta paketten; diğer Linux'ta GitHub release ikilisi
-    (mimariye göre x86_64/arm64/armv6).
+05. **lazygit** — from the package manager on macOS/Arch; on other Linux a GitHub
+    release binary (x86_64/arm64/armv6 by architecture).
 
-06. **Node.js + npm** — mevcut değilse paket yöneticisinden. `yaml-language-server`
-    için gerekli.
+06. **Node.js + npm** — from the package manager if not present. Needed for
+    `yaml-language-server`.
 
-07. **Go** — Linux'ta resmi tarball (`/usr/local/go`), macOS'ta brew. `gopls`
-    için gerekli; PATH'e `/usr/local/go/bin` eklenir.
+07. **Go** — official tarball on Linux (`/usr/local/go`), brew on macOS. Needed
+    for `gopls`; `/usr/local/go/bin` is added to PATH.
 
-08. **LSP sunucuları** —
+08. **LSP servers** —
 
     - `gopls`: `go install golang.org/x/tools/gopls@latest` → `~/go/bin`
     - `yaml-language-server`: `npm install -g`
-      PATH satırları `~/.zshrc` / `~/.bashrc`'ye idempotent eklenir.
+      PATH lines are added idempotently to `~/.zshrc` / `~/.bashrc`.
 
-09. **Nerd Font** — JetBrainsMono. macOS'ta cask, Linux'ta
-    `~/.local/share/fonts` + `fc-cache`. **SSH/headless oturumda otomatik
-    atlanır** (terminalin çalıştığı makineye kurulmalı).
+09. **Nerd Font** — JetBrainsMono. Cask on macOS, `~/.local/share/fonts` +
+    `fc-cache` on Linux. **Auto-skipped on SSH/headless sessions** (install it on
+    the machine running the terminal).
 
-10. **Config dağıtımı** — varsa mevcut `~/.config/nvim` zaman damgalı yedeğe
-    taşınır, sonra symlink (veya `--copy`).
+10. **Config deployment** — any existing `~/.config/nvim` is moved to a
+    timestamped backup, then symlinked (or copied with `--copy`).
 
-11. **Plugin bootstrap** — `nvim --headless +Lazy! restore` ile
-    `lazy-lock.json`'daki sabit commit'ler kurulur; treesitter `go`/`lua`
-    parser'ları yüklenir.
+11. **Plugin bootstrap** — `nvim --headless +Lazy! restore` installs the pinned
+    commits from `lazy-lock.json`; the `go`/`lua` treesitter parsers are loaded.
 
-12. **Doctor** — tüm ikilileri ve sürümleri özetler.
+12. **Doctor** — summarizes all binaries and versions.
 
 ______________________________________________________________________
 
-## Elle kurulum (script kullanmadan)
+## Manual install (without the script)
 
 ```bash
-# 1) Önkoşullar (örnek: macOS)
+# 1) Prerequisites (example: macOS)
 brew install neovim git ripgrep fd lazygit node go
 brew install --cask font-jetbrains-mono-nerd-font
 
-# 2) LSP sunucuları
-go install golang.org/x/tools/gopls@latest      # ~/go/bin PATH'te olmalı
+# 2) LSP servers
+go install golang.org/x/tools/gopls@latest      # ~/go/bin must be on PATH
 npm install -g yaml-language-server
 
-# 3) Config'i yerleştir
-ln -s "$PWD/nvim" ~/.config/nvim                 # veya: cp -R nvim ~/.config/nvim
+# 3) Deploy the config
+ln -s "$PWD/nvim" ~/.config/nvim                 # or: cp -R nvim ~/.config/nvim
 
-# 4) Neovim'i aç — lazy.nvim pluginleri otomatik kurar
+# 4) Open Neovim — lazy.nvim installs the plugins automatically
 nvim
 ```
 
-Debian/Ubuntu/Raspberry Pi OS'te `brew` yerine `apt` kullanın; `apt`'taki
-Neovim çoğu zaman 0.11'den eski olduğu için Neovim'i [resmi
-tarball](https://github.com/neovim/neovim/releases)'dan kurun.
+On Debian/Ubuntu/Raspberry Pi OS use `apt` instead of `brew`; since the `apt`
+Neovim is usually older than 0.11, install Neovim from the
+[official tarball](https://github.com/neovim/neovim/releases).
 
 ______________________________________________________________________
 
-## Pluginler — ne işe yarıyor?
+## Plugins — what does each do?
 
-| Plugin                                  | İşlevi                                                                                                                       |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **lazy.nvim**                           | Plugin yöneticisi. `init.lua` ilk açılışta kendini bootstrap eder; `lazy-lock.json` ile sürümleri kilitler.                  |
-| **catppuccin/nvim**                     | Renk teması (`colorscheme catppuccin`). `priority=1000` ile diğerlerinden önce yüklenir.                                     |
-| **nvim-tree.lua**                       | Soldaki dosya gezgini. Genişlik 35, dotfile'ları gösterir, git durumunu işaretler, açık dosyayı/çalışma dizinini takip eder. |
-| **telescope.nvim** (+ **plenary.nvim**) | Fuzzy finder: dosya bul, metin ara (`rg`), buffer içinde ara. LSP referansları da Telescope ile listelenir.                  |
-| **nvim-treesitter**                     | Doğru sözdizimi vurgulama ve kod ayrıştırma. `build=:TSUpdate`. Config `go` ve `lua` dillerini kayıt eder.                   |
-| **lualine.nvim**                        | Alt durum çubuğu (mod, dosya, git, konum).                                                                                   |
-| **gitsigns.nvim**                       | Satır içi git işaretleri (eklendi/değişti/silindi) + **current line blame** (satır sonunda yazar + zaman).                   |
-| **vim-fugitive**                        | Klasik git komut arayüzü (`:Git …`); diffview/diğer araçların da temeli.                                                     |
-| **lazygit.nvim**                        | Neovim içinden tam ekran `lazygit` TUI'si. `cmd` ile tembel yüklenir.                                                        |
-| **diffview.nvim**                       | Gelişmiş diff ve dosya geçmişi görünümü (`:DiffviewOpen`, dosya history).                                                    |
-| **nvim-cmp**                            | Otomatik tamamlama motoru. Kaynaklar: LSP, snippet, buffer, path.                                                            |
-| ↳ **cmp-nvim-lsp**                      | LSP tamamlama kaynağı + LSP yeteneklerini cmp'ye bildirir.                                                                   |
-| ↳ **cmp-buffer / cmp-path**             | Açık buffer kelimeleri ve dosya yolu tamamlama.                                                                              |
-| ↳ **LuaSnip** + **cmp_luasnip**         | Snippet motoru ve cmp entegrasyonu.                                                                                          |
-| **which-key.nvim**                      | `<leader>` bastığınızda kısayol ipuçlarını gösteren popup. `git`/`rename` grupları tanımlı.                                  |
-| **SchemaStore.nvim**                    | yaml-language-server'a hazır JSON/YAML şemaları (k8s, GitHub Actions, OpenAPI…) sağlar.                                      |
-| **csvview.nvim**                        | CSV/TSV dosyalarını hizalı tablo olarak gösterir; açılışta otomatik etkinleşir, satır kaydırmayı kapatır.                    |
+| Plugin                                  | Purpose                                                                                                              |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **lazy.nvim**                           | Plugin manager. `init.lua` bootstraps it on first launch; `lazy-lock.json` pins versions.                            |
+| **catppuccin/nvim**                     | Color theme (`colorscheme catppuccin`). Loaded before others with `priority=1000`.                                   |
+| **nvim-tree.lua**                       | File explorer on the left. Width 35, shows dotfiles, marks git status, follows the open file / working directory.    |
+| **telescope.nvim** (+ **plenary.nvim**) | Fuzzy finder: find files, search text (`rg`), search within a buffer. LSP references are also listed via Telescope.  |
+| **nvim-treesitter**                     | Accurate syntax highlighting and code parsing. `build=:TSUpdate`. The config registers the `go` and `lua` languages. |
+| **lualine.nvim**                        | Bottom status line (mode, file, git, position).                                                                      |
+| **gitsigns.nvim**                       | Inline git signs (added/changed/removed) + **current line blame** (author + time at end of line).                    |
+| **vim-fugitive**                        | Classic git command interface (`:Git …`); also the foundation for diffview and other tools.                          |
+| **lazygit.nvim**                        | Full-screen `lazygit` TUI from inside Neovim. Lazy-loaded via `cmd`.                                                 |
+| **diffview.nvim**                       | Advanced diff and file-history views (`:DiffviewOpen`, file history).                                                |
+| **nvim-cmp**                            | Autocompletion engine. Sources: LSP, snippets, buffer, path.                                                         |
+| ↳ **cmp-nvim-lsp**                      | LSP completion source + advertises LSP capabilities to cmp.                                                          |
+| ↳ **cmp-buffer / cmp-path**             | Completion from open-buffer words and file paths.                                                                    |
+| ↳ **LuaSnip** + **cmp_luasnip**         | Snippet engine and its cmp integration.                                                                              |
+| **which-key.nvim**                      | Popup showing keybinding hints when you press `<leader>`. `git`/`rename` groups defined.                             |
+| **SchemaStore.nvim**                    | Provides ready-made JSON/YAML schemas (k8s, GitHub Actions, OpenAPI…) to yaml-language-server.                       |
+| **csvview.nvim**                        | Renders CSV/TSV files as an aligned table; auto-enabled on open, disables line wrap.                                 |
 
 ______________________________________________________________________
 
-## LSP sunucuları
+## LSP servers
 
-Native API (`vim.lsp.config` + `vim.lsp.enable`, Neovim 0.11+) ile yapılandırılır.
+Configured with the native API (`vim.lsp.config` + `vim.lsp.enable`, Neovim
+0.11+).
 
-- **gopls** (Go) — `go`, `gomod`, `gowork`, `gotmpl`. Açık: `unusedparams` ve
-  `shadow` analizleri, `staticcheck`, `gofumpt` formatlama. Kök işaretleri:
+- **gopls** (Go) — `go`, `gomod`, `gowork`, `gotmpl`. Enabled: `unusedparams`
+  and `shadow` analyses, `staticcheck`, `gofumpt` formatting. Root markers:
   `go.mod` / `go.work` / `.git`.
-- **yaml-language-server** (YAML/OpenAPI) — şemalar `SchemaStore.nvim`'den
-  beslenir (`schemaStore` kapalı, harici `schemas()` kullanılır). RedHat
-  telemetrisi kapalı. yamlls `references` desteklemediğinden `gr` için buffer
-  içi grep fallback'i vardır.
+- **yaml-language-server** (YAML/OpenAPI) — schemas come from `SchemaStore.nvim`
+  (`schemaStore` disabled, external `schemas()` used). RedHat telemetry disabled.
+  Since yamlls doesn't support `references`, `gr` falls back to in-buffer grep.
 
-LSP bir tampona bağlanınca (`LspAttach`) şu kısayollar etkinleşir:
-`gd` tanım, `gr` referanslar, `K` hover, `<leader>rn` rename, `<leader>ca` code
-action, `<leader>d` diagnostic float, `[d`/`]d` diagnostic gezinme.
-
-______________________________________________________________________
-
-## Kısayollar (keymaps)
-
-Leader tuşu: **`<Space>`**
-
-| Kısayol                                                       | Açıklama                          |
-| ------------------------------------------------------------- | --------------------------------- |
-| `<leader>w` / `<leader>q`                                     | Kaydet / çık                      |
-| `<C-h/j/k/l>`                                                 | Pencereler arası geçiş            |
-| `jk` (insert)                                                 | Insert modundan çık (ESC)         |
-| `<leader>e` / `<leader>f`                                     | Dosya ağacı aç-kapa / odakla      |
-| `<leader>cd`                                                  | cwd'yi ağaçta seçili dizine taşı  |
-| `<leader>ff`                                                  | Dosya bul (Telescope)             |
-| `<leader>fg`                                                  | Metin ara — live grep             |
-| `<leader>/`                                                   | Açık buffer içinde ara            |
-| `<leader>gg` / `<leader>gf`                                   | LazyGit / mevcut dosyanın repo'su |
-| `<leader>gd` / `<leader>gc`                                   | Diffview aç / kapat               |
-| `<leader>gh`                                                  | Mevcut dosyanın git geçmişi       |
-| `<leader>gb`                                                  | Satır blame aç-kapa               |
-| `<leader>y` (visual, tmux)                                    | Seçimi tmux buffer'ına kopyala    |
-| `gd` `gr` `K` `<leader>rn` `<leader>ca` `<leader>d` `[d` `]d` | LSP (yukarıya bakın)              |
+When LSP attaches to a buffer (`LspAttach`), these mappings become active:
+`gd` definition, `gr` references, `K` hover, `<leader>rn` rename, `<leader>ca`
+code action, `<leader>d` diagnostic float, `[d`/`]d` diagnostic navigation.
 
 ______________________________________________________________________
 
-## Güncelleme
+## Keymaps
+
+Leader key: **`<Space>`**
+
+| Keymap                                                        | Description                                      |
+| ------------------------------------------------------------- | ------------------------------------------------ |
+| `<leader>w` / `<leader>q`                                     | Save / quit                                      |
+| `<C-h/j/k/l>`                                                 | Move between windows                             |
+| `jk` (insert)                                                 | Exit insert mode (ESC)                           |
+| `<leader>e` / `<leader>f`                                     | Toggle / focus file tree                         |
+| `<leader>cd`                                                  | Change cwd to the directory selected in the tree |
+| `<leader>ff`                                                  | Find files (Telescope)                           |
+| `<leader>fg`                                                  | Search text — live grep                          |
+| `<leader>/`                                                   | Search within the open buffer                    |
+| `<leader>gg` / `<leader>gf`                                   | LazyGit / current file's repo                    |
+| `<leader>gd` / `<leader>gc`                                   | Diffview open / close                            |
+| `<leader>gh`                                                  | Current file's git history                       |
+| `<leader>gb`                                                  | Toggle line blame                                |
+| `<leader>y` (visual, tmux)                                    | Copy selection to the tmux buffer                |
+| `gd` `gr` `K` `<leader>rn` `<leader>ca` `<leader>d` `[d` `]d` | LSP (see above)                                  |
+
+______________________________________________________________________
+
+## Updating
 
 ```bash
-# Pluginleri güncelle ve kilidi tazele
+# Update plugins and refresh the lock
 nvim "+Lazy sync" +qa
-# lazy-lock.json değişikliklerini commit'le
-git add nvim/lazy-lock.json && git commit -m "chore: plugin güncellemesi"
+# Commit the lazy-lock.json changes
+git add nvim/lazy-lock.json && git commit -m "chore: plugin update"
 
-# Başka cihazda aynı sürümleri uygula
+# Apply the same versions on another device
 git pull && nvim "+Lazy! restore" +qa
 ```
 
-LSP sunucularını güncellemek için:
-`go install golang.org/x/tools/gopls@latest` ve
+To update the LSP servers:
+`go install golang.org/x/tools/gopls@latest` and
 `npm update -g yaml-language-server`.
 
 ______________________________________________________________________
 
-## Sorun giderme
+## Troubleshooting
 
-- **`vim.lsp.config` hatası / LSP çalışmıyor** → Neovim < 0.11.
-  `nvim --version` ile kontrol edin; resmi tarball'dan güncelleyin.
-- **İkonlar kutucuk/soru işareti** → Terminal yazı tipi Nerd Font değil.
-  Terminal profilinden **JetBrainsMono Nerd Font** seçin.
-- **Telescope `live_grep` boş** → `rg` (ripgrep) kurulu değil.
-- **`find_files` yavaş / çalışmıyor** → `fd` yok; Debian'da `fdfind` kurulu
-  olabilir, `~/.local/bin/fd` symlink'i PATH'te olmalı.
-- **treesitter parser eksik** → Neovim içinde `:TSInstall go lua`.
-- **gopls bulunamadı** → `~/go/bin` PATH'te değil.
-  `export PATH="$HOME/go/bin:$PATH"` ekleyin (script `.zshrc`/`.bashrc`'ye ekler).
-- **Pano (yank) sistemle senkron değil (Linux)** → `xclip` (X11) veya
-  `wl-clipboard` (Wayland) kurun. Headless/SSH'da Neovim'in OSC52
-  desteğini kullanın: `vim.g.clipboard` için OSC52 ayarı.
-- **32-bit Raspberry Pi'de Neovim eski** → resmi armv7 ikilisi yok; kaynaktan
-  derleyin: <https://github.com/neovim/neovim/blob/master/BUILD.md>. **Öneri:
-  64-bit Raspberry Pi OS (arm64) kullanın** — orada resmi ikili var, ekstra
-  adım gerekmez.
-- **Yanlış config yüklendi** → eski kurulum `~/.config/nvim.bak.<tarih>`'e
-  yedeklenir; gerekirse geri alın.
+- **`vim.lsp.config` error / LSP not working** → Neovim < 0.11. Check with
+  `nvim --version`; update from the official tarball.
+- **Icons show as boxes/question marks** → the terminal font isn't a Nerd Font.
+  Select **JetBrainsMono Nerd Font** in your terminal profile.
+- **Telescope `live_grep` empty** → ripgrep (`rg`) is not installed.
+- **`find_files` slow / not working** → `fd` is missing; on Debian it may be
+  installed as `fdfind`, and `~/.local/bin/fd` must be on PATH.
+- **treesitter parser missing** → inside Neovim run `:TSInstall go lua`.
+- **gopls not found** → `~/go/bin` is not on PATH. Add
+  `export PATH="$HOME/go/bin:$PATH"` (the script adds it to `.zshrc`/`.bashrc`).
+- **Clipboard (yank) not synced with the system (Linux)** → install `xclip`
+  (X11) or `wl-clipboard` (Wayland). On headless/SSH use Neovim's OSC52 support:
+  configure `vim.g.clipboard` for OSC52.
+- **Neovim is old on 32-bit Raspberry Pi** → no official armv7 binary; build from
+  source: <https://github.com/neovim/neovim/blob/master/BUILD.md>. **Recommended:
+  use 64-bit Raspberry Pi OS (arm64)** — an official binary exists there, with no
+  extra steps.
+- **Wrong config loaded** → the old setup is backed up to
+  `~/.config/nvim.bak.<date>`; restore it if needed.
