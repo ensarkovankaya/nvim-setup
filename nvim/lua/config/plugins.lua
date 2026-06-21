@@ -54,7 +54,7 @@ require("lazy").setup({
   -- JSON/YAML schemas (OpenAPI, k8s, github actions, ...)
   { "b0o/SchemaStore.nvim", lazy = true },
 
-  -- CSV/TSV tablo görünümü (csv/tsv açılınca otomatik enable)
+  -- CSV/TSV table view (auto-enabled when a csv/tsv file is opened)
   {
     "hat0uma/csvview.nvim",
     cmd = { "CsvViewEnable", "CsvViewDisable", "CsvViewToggle" },
@@ -65,7 +65,7 @@ require("lazy").setup({
       vim.api.nvim_create_autocmd("FileType", {
         pattern = { "csv", "tsv" },
         callback = function()
-          vim.opt_local.wrap = false  -- wrap tablo hizasını bozuyor, yatay scroll'u engelliyor
+          vim.opt_local.wrap = false  -- wrap breaks table alignment and blocks horizontal scroll
           vim.cmd("CsvViewEnable")
         end,
       })
@@ -137,7 +137,7 @@ cmp.setup({
   }),
 })
 
--- which-key setup (groups; per-mapping desc'leri keymaps.lua veriyor)
+-- which-key setup (groups; per-mapping descriptions are defined in keymaps.lua)
 local wk = require("which-key")
 wk.setup({ preset = "modern" })
 wk.add({
@@ -161,7 +161,7 @@ vim.lsp.config.gopls = {
 }
 vim.lsp.enable("gopls")
 
--- LSP: yaml-language-server (OpenAPI/Swagger $ref desteği)
+-- LSP: yaml-language-server (OpenAPI/Swagger $ref support)
 vim.lsp.config.yamlls = {
   cmd = { "yaml-language-server", "--stdio" },
   filetypes = { "yaml", "yaml.docker-compose", "yaml.gitlab" },
@@ -169,7 +169,7 @@ vim.lsp.config.yamlls = {
   capabilities = require("cmp_nvim_lsp").default_capabilities(),
   settings = {
     yaml = {
-      schemaStore = { enable = false, url = "" },  -- SchemaStore.nvim üzerinden
+      schemaStore = { enable = false, url = "" },  -- provided via SchemaStore.nvim
       schemas = require("schemastore").yaml.schemas(),
       validate = true,
       hover = true,
@@ -180,14 +180,14 @@ vim.lsp.config.yamlls = {
 }
 vim.lsp.enable("yamlls")
 
--- LSP keymaps (aktif olunca çalışır)
+-- LSP keymaps (active once LSP attaches)
 vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(ev)
     local function o(desc) return { buffer = ev.buf, desc = desc } end
     vim.keymap.set("n", "gd", vim.lsp.buf.definition, o("Go to definition"))
     vim.keymap.set("n", "gr", function()
       local client = vim.lsp.get_client_by_id(ev.data.client_id)
-      -- yamlls references desteklemiyor → buffer içi grep fallback
+      -- yamlls doesn't support references → in-buffer grep fallback
       if client and not client.server_capabilities.referencesProvider then
         require("telescope.builtin").current_buffer_fuzzy_find({
           default_text = vim.fn.expand("<cword>"),
