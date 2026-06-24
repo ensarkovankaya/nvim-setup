@@ -23,6 +23,12 @@ require("lazy").setup({
     dependencies = { "nvim-lua/plenary.nvim" }
   },
 
+  -- Find & replace UI (current file or project-wide; needs ripgrep + sed)
+  {
+    "nvim-pack/nvim-spectre",
+    dependencies = { "nvim-lua/plenary.nvim" },
+  },
+
   -- Syntax highlighting
   { "nvim-treesitter/nvim-treesitter", build = ":TSUpdate" },
 
@@ -100,6 +106,9 @@ require("nvim-tree").setup({
 -- Telescope setup
 require("telescope").setup()
 
+-- Spectre (find & replace) setup
+require("spectre").setup()
+
 -- Gitsigns setup
 require("gitsigns").setup({
   current_line_blame = true,
@@ -143,6 +152,7 @@ wk.setup({ preset = "modern" })
 wk.add({
   { "<leader>g", group = "git" },
   { "<leader>r", group = "rename" },
+  { "<leader>s", group = "search/replace" },
 })
 
 -- LSP: gopls (nvim 0.11+ native API)

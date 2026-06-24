@@ -19,6 +19,12 @@ map("n", "<leader>ff", ":Telescope find_files<CR>", { desc = "Find files" })
 map("n", "<leader>fg", ":Telescope live_grep<CR>",  { desc = "Live grep" })
 map("n", "<leader>/",  ":Telescope current_buffer_fuzzy_find<CR>", { desc = "Search in buffer" })
 
+-- Find & replace (Spectre)
+map("n", "<leader>sr", function() require("spectre").open() end, { desc = "Find & replace (project)" })
+map("n", "<leader>sf", function() require("spectre").open_file_search({ select_word = true }) end, { desc = "Find & replace (current file)" })
+map("n", "<leader>sw", function() require("spectre").open_visual({ select_word = true }) end, { desc = "Replace word under cursor" })
+map("v", "<leader>sw", function() require("spectre").open_visual() end, { desc = "Replace selection" })
+
 -- Change cwd to nvim-tree's focused directory
 map("n", "<leader>cd", function()
   local api = require("nvim-tree.api")
