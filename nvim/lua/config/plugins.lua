@@ -32,6 +32,9 @@ require("lazy").setup({
   -- Syntax highlighting
   { "nvim-treesitter/nvim-treesitter", build = ":TSUpdate" },
 
+  -- Auto-highlight other uses of the symbol under the cursor
+  { "RRethy/vim-illuminate" },
+
   -- Status bar
   { "nvim-lualine/lualine.nvim" },
 
@@ -125,6 +128,12 @@ vim.keymap.set("n", "<leader>gb", ":Gitsigns toggle_current_line_blame<CR>", { s
 -- Treesitter: ensure Go is installed
 vim.treesitter.language.add("go")
 vim.treesitter.language.add("lua")
+
+-- Auto-highlight symbol under cursor (LSP → treesitter → regex fallback)
+require("illuminate").configure({
+  delay = 120,
+  providers = { "lsp", "treesitter", "regex" },
+})
 
 -- Autocomplete setup
 local cmp = require("cmp")
