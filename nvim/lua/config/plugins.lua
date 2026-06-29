@@ -112,6 +112,14 @@ require("telescope").setup()
 -- Spectre (find & replace) setup
 require("spectre").setup()
 
+-- Status bar setup (lualine_b shows git branch automatically when in a repo)
+require("lualine").setup({
+  options = {
+    theme = "catppuccin",
+    globalstatus = true,  -- single statusline shared across splits
+  },
+})
+
 -- Gitsigns setup
 require("gitsigns").setup({
   current_line_blame = true,
