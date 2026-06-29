@@ -115,7 +115,7 @@ require("spectre").setup()
 -- Status bar setup (lualine_b shows git branch automatically when in a repo)
 require("lualine").setup({
   options = {
-    theme = "catppuccin",
+    theme = "catppuccin-nvim",  -- catppuccin doesn't ship a "catppuccin" theme; this tracks the active flavour
     globalstatus = true,  -- single statusline shared across splits
   },
 })
