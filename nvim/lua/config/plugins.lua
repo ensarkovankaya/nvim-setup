@@ -20,7 +20,11 @@ require("lazy").setup({
   -- Fuzzy finder (file and text search)
   {
     "nvim-telescope/telescope.nvim",
-    dependencies = { "nvim-lua/plenary.nvim" }
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      -- C-compiled sorter; enables prompt filters: !exclude  'exact  ^prefix  suffix$
+      { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
+    },
   },
 
   -- Find & replace UI (current file or project-wide; needs ripgrep + sed)
@@ -107,7 +111,18 @@ require("nvim-tree").setup({
 })
 
 -- Telescope setup
-require("telescope").setup()
+require("telescope").setup({
+  extensions = {
+    -- fzf syntax in any picker prompt: !pat = exclude, 'pat = exact, ^pat / pat$ = anchored
+    fzf = {
+      fuzzy = true,
+      override_generic_sorter = true,
+      override_file_sorter = true,
+      case_mode = "smart_case",
+    },
+  },
+})
+require("telescope").load_extension("fzf")
 
 -- Spectre (find & replace) setup
 require("spectre").setup()
