@@ -17,6 +17,8 @@ map("n", "<leader>f", ":NvimTreeFocus<CR>",  { desc = "Focus file tree" })
 -- Telescope (searches from cwd)
 map("n", "<leader>ff", ":Telescope find_files<CR>", { desc = "Find files" })
 map("n", "<leader>fg", ":Telescope live_grep<CR>",  { desc = "Live grep" })
+map("n", "<leader>fs", ":Telescope lsp_dynamic_workspace_symbols<CR>", { desc = "Find symbols (workspace, LSP)" })
+map("n", "<leader>fo", ":Telescope lsp_document_symbols<CR>",          { desc = "Symbols in current file (LSP)" })
 map("n", "<leader>/",  ":Telescope current_buffer_fuzzy_find<CR>", { desc = "Search in buffer" })
 
 -- Find & replace (Spectre)
