@@ -38,12 +38,70 @@ map("n", "<leader>cd", function()
   end
 end, { desc = "cd to tree dir" })
 
+-- Pick a branch via Telescope, then run on_choice(branch) instead of checking out
+local function diff_pick_branch(on_choice)
+  local actions = require("telescope.actions")
+  local astate = require("telescope.actions.state")
+  require("telescope.builtin").git_branches({
+    attach_mappings = function(bufnr)
+      actions.select_default:replace(function()
+        local entry = astate.get_selected_entry()
+        actions.close(bufnr)
+        if entry then on_choice(entry.value) end
+      end)
+      return true
+    end,
+  })
+end
+
 -- Git
 map("n", "<leader>gg", ":LazyGit<CR>",               { desc = "LazyGit" })
 map("n", "<leader>gf", ":LazyGitCurrentFile<CR>",    { desc = "LazyGit current file repo" })
 map("n", "<leader>gd", ":DiffviewOpen<CR>",          { desc = "Diffview open" })
 map("n", "<leader>gh", ":DiffviewFileHistory %<CR>", { desc = "Current file history" })
 map("n", "<leader>gc", ":DiffviewClose<CR>",         { desc = "Diffview close" })
+
+-- Compare against a branch (Telescope branch picker, no checkout)
+-- Normal: whole file, native side-by-side split (gitsigns)
+map("n", "<leader>gB", function()
+  diff_pick_branch(function(branch)
+    require("gitsigns").diffthis(branch)
+  end)
+end, { desc = "Diff file vs branch" })
+
+-- Visual: only the selected line range, isolated side-by-side in a scratch tab
+map("x", "<leader>gB", function()
+  -- leave visual so '< and '> mark the selection
+  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "x", false)
+  local l1, l2 = vim.fn.line("'<"), vim.fn.line("'>")
+  local file = vim.fn.expand("%:p")
+  if file == "" then return vim.notify("No file in buffer", vim.log.levels.WARN) end
+  local dir = vim.fn.fnamemodify(file, ":h")
+  local ft = vim.bo.filetype
+  local cur = vim.api.nvim_buf_get_lines(0, l1 - 1, l2, false)
+  diff_pick_branch(function(branch)
+    local rel = vim.fn.systemlist({ "git", "-C", dir, "ls-files", "--full-name", "--", file })[1]
+    if not rel or rel == "" then return vim.notify("File not tracked by git", vim.log.levels.WARN) end
+    local all = vim.fn.systemlist({ "git", "-C", dir, "show", branch .. ":" .. rel })
+    if vim.v.shell_error ~= 0 then
+      return vim.notify("git show failed: " .. branch .. ":" .. rel, vim.log.levels.ERROR)
+    end
+    local other = {}
+    for i = l1, math.min(l2, #all) do other[#other + 1] = all[i] end
+    local function scratch(name, lines)
+      local b = vim.api.nvim_get_current_buf()
+      vim.bo[b].buftype, vim.bo[b].bufhidden, vim.bo[b].swapfile = "nofile", "wipe", false
+      vim.api.nvim_buf_set_lines(b, 0, -1, false, lines)
+      vim.bo[b].filetype = ft
+      pcall(vim.api.nvim_buf_set_name, b, name)
+      vim.cmd("diffthis")
+    end
+    vim.cmd("tabnew")
+    scratch(branch .. " [" .. l1 .. "-" .. l2 .. "]", other)
+    vim.cmd("rightbelow vsplit | enew")
+    scratch("CURRENT [" .. l1 .. "-" .. l2 .. "]", cur)
+  end)
+end, { desc = "Diff selection vs branch" })
 
 -- Tmux
 if vim.env.TMUX then
