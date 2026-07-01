@@ -60,6 +60,7 @@ map("n", "<leader>gf", ":LazyGitCurrentFile<CR>",    { desc = "LazyGit current f
 map("n", "<leader>gd", ":DiffviewOpen<CR>",          { desc = "Diffview open" })
 map("n", "<leader>gh", ":DiffviewFileHistory %<CR>", { desc = "Current file history" })
 map("n", "<leader>gc", ":DiffviewClose<CR>",         { desc = "Diffview close" })
+map("n", "<leader>gp", ":Octo pr list<CR>",          { desc = "GitHub PRs (octo)" })
 
 -- Compare against a branch (Telescope branch picker, no checkout)
 -- Normal: whole file, native side-by-side split (gitsigns)

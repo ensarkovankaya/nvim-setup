@@ -52,6 +52,18 @@ require("lazy").setup({
   },
   { "sindrets/diffview.nvim" },
 
+  -- GitHub PR/issue review inside nvim (needs gh CLI; uses telescope picker + diffview)
+  {
+    "pwntester/octo.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-telescope/telescope.nvim",
+      "nvim-tree/nvim-web-devicons",
+    },
+    cmd = "Octo",
+    opts = { picker = "telescope" },
+  },
+
   -- Autocomplete
   { "hrsh7th/nvim-cmp", dependencies = {
     "hrsh7th/cmp-nvim-lsp",
