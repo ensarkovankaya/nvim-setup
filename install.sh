@@ -9,7 +9,7 @@
 #   4. lazygit
 #   5. Node.js + npm  (for yaml-language-server)
 #   6. Go            (for gopls)
-#   7. LSP servers: gopls, yaml-language-server
+#   7. LSP servers (gopls, yaml-language-server) + tree-sitter CLI
 #   8. Nerd Font (JetBrainsMono) — for icons
 #   9. Deploy the config to ~/.config/nvim (symlink, backs up the old one)
 #  10. Plugin bootstrap (lazy.nvim restore + treesitter parsers)
@@ -126,6 +126,7 @@ detect_platform() {
 go_arch()      { case "$ARCH_RAW" in x86_64|amd64) echo amd64;; aarch64|arm64) echo arm64;; armv7l|armv6l) echo armv6l;; *) echo "";; esac; }
 nvim_arch()    { case "$ARCH_RAW" in x86_64|amd64) echo x86_64;; aarch64|arm64) echo arm64;; *) echo "";; esac; }
 lazygit_arch() { case "$ARCH_RAW" in x86_64|amd64) echo x86_64;; aarch64|arm64) echo arm64;; armv7l|armv6l) echo armv6;; *) echo "";; esac; }
+tree_sitter_arch() { case "$ARCH_RAW" in x86_64|amd64) echo x64;; aarch64|arm64) echo arm64;; armv7l) echo arm;; i686|i386) echo x86;; *) echo "";; esac; }
 
 # ---------------------------------------------------------------------------
 # Homebrew (macOS)
@@ -363,6 +364,39 @@ install_lsp_servers() {
 }
 
 # ---------------------------------------------------------------------------
+# tree-sitter CLI (required to compile treesitter parsers: go, lua, json)
+# ---------------------------------------------------------------------------
+install_tree_sitter() {
+  step "tree-sitter CLI (compiles treesitter parsers)"
+  have tree-sitter && { ok "tree-sitter installed"; return; }
+
+  if [ "$OS" = "macos" ]; then
+    # Note: the `tree-sitter` formula ships only the library; the CLI is `tree-sitter-cli`
+    pkg_install tree-sitter-cli && { ok "tree-sitter ready"; return; }
+    warn "brew install tree-sitter-cli failed"; return
+  fi
+
+  if [ "$PKG" = "pacman" ]; then
+    pkg_install tree-sitter-cli && { ok "tree-sitter ready"; return; }
+  fi
+
+  # Other Linux: prebuilt binary from GitHub releases (no rust/node needed)
+  local arch ver url
+  arch="$(tree_sitter_arch)"
+  [ -z "$arch" ] && { warn "tree-sitter: no prebuilt binary for $ARCH_RAW; try 'cargo install tree-sitter-cli'"; return; }
+  ver="$(curl -fsSL https://api.github.com/repos/tree-sitter/tree-sitter/releases/latest \
+        | grep -m1 '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/')"
+  [ -z "$ver" ] && { warn "Could not get tree-sitter version, skipping"; return; }
+  url="https://github.com/tree-sitter/tree-sitter/releases/download/v${ver}/tree-sitter-linux-${arch}.gz"
+  info "Downloading: tree-sitter v$ver ($arch)"
+  curl -fsSL "$url" -o /tmp/tree-sitter.gz || { warn "Failed to download tree-sitter"; return; }
+  gunzip -f /tmp/tree-sitter.gz || { warn "Failed to extract tree-sitter"; return; }
+  as_root install /tmp/tree-sitter /usr/local/bin/tree-sitter
+  rm -f /tmp/tree-sitter
+  have tree-sitter && ok "tree-sitter ready" || warn "tree-sitter install failed"
+}
+
+# ---------------------------------------------------------------------------
 # Nerd Font (icons)
 # ---------------------------------------------------------------------------
 install_nerd_font() {
@@ -427,10 +461,10 @@ bootstrap_plugins() {
   export PATH="${PATH}:/usr/local/go/bin:$HOME/go/bin"
   info "lazy.nvim restore (pinned versions from lazy-lock.json)…"
   nvim --headless "+Lazy! restore" +qa 2>/dev/null || warn "Lazy restore warned (completes on first launch)"
-  info "treesitter parsers (go, lua)…"
-  nvim --headless -c "lua pcall(function() require('nvim-treesitter').install({'go','lua'}) end)" -c "qa" 2>/dev/null \
-    || nvim --headless "+TSUpdate go lua" +qa 2>/dev/null \
-    || warn "treesitter parser install skipped (try :TSInstall go lua inside nvim)"
+  info "treesitter parsers (go, lua, json)…"
+  nvim --headless -c "lua pcall(function() require('nvim-treesitter').install({'go','lua','json'}) end)" -c "qa" 2>/dev/null \
+    || nvim --headless "+TSUpdate go lua json" +qa 2>/dev/null \
+    || warn "treesitter parser install skipped (try :TSInstall go lua json inside nvim)"
   ok "Plugins installed"
 }
 
@@ -441,7 +475,7 @@ doctor() {
   step "Doctor — install summary"
   export PATH="${PATH}:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin"
   local b ver
-  for b in nvim git rg fd lazygit node npm go gopls yaml-language-server; do
+  for b in nvim git rg fd lazygit node npm go gopls yaml-language-server tree-sitter; do
     if have "$b"; then
       case "$b" in
         nvim) ver="$(nvim_version)" ;;
@@ -478,6 +512,7 @@ main() {
   fi
 
   install_lsp_servers
+  install_tree_sitter
   install_nerd_font
   deploy_config
   bootstrap_plugins

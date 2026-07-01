@@ -114,5 +114,15 @@ if vim.env.TMUX then
   end, { desc = "Yank to tmux buffer" })
 end
 
+-- Folding (nvim-ufo). za/zo/zc work as usual; zR/zM use ufo for correct previews
+map("n", "zR", function() require("ufo").openAllFolds() end,  { desc = "Open all folds" })
+map("n", "zM", function() require("ufo").closeAllFolds() end, { desc = "Close all folds" })
+-- Mirror fold actions under <leader>z so they appear in the which-key (space) menu
+map("n", "<leader>za", "za",                                         { desc = "Fold toggle" })
+map("n", "<leader>zo", "zo",                                         { desc = "Fold open" })
+map("n", "<leader>zc", "zc",                                         { desc = "Fold close" })
+map("n", "<leader>zR", function() require("ufo").openAllFolds() end,  { desc = "Open all folds" })
+map("n", "<leader>zM", function() require("ufo").closeAllFolds() end, { desc = "Close all folds" })
+
 -- Insert mode
 map("i", "jk", "<ESC>", { desc = "Exit insert mode" })

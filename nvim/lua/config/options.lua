@@ -13,6 +13,12 @@ opt.scrolloff = 8          -- keep 8 lines above/below cursor
 opt.signcolumn = "yes"     -- always show sign column (LSP diagnostics)
 opt.timeoutlen = 300       -- which-key popup delay
 
+-- Folding (nvim-ufo manages folds; high foldlevel keeps files open by default)
+opt.foldcolumn = "auto:1"  -- show fold column only when folds exist
+opt.foldlevel = 99         -- ufo requires a high foldlevel
+opt.foldlevelstart = 99    -- open all folds when a file loads
+opt.foldenable = true
+
 -- Go: use tabs, width 4
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "go",

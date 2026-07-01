@@ -36,6 +36,12 @@ require("lazy").setup({
   -- Syntax highlighting
   { "nvim-treesitter/nvim-treesitter", build = ":TSUpdate" },
 
+  -- Code folding with rich fold preview (VSCode-like: "{ … } N lines")
+  {
+    "kevinhwang91/nvim-ufo",
+    dependencies = { "kevinhwang91/promise-async" },
+  },
+
   -- Auto-highlight other uses of the symbol under the cursor
   { "RRethy/vim-illuminate" },
 
@@ -163,6 +169,20 @@ vim.keymap.set("n", "<leader>gb", ":Gitsigns toggle_current_line_blame<CR>", { s
 -- Treesitter: ensure Go is installed
 vim.treesitter.language.add("go")
 vim.treesitter.language.add("lua")
+vim.treesitter.language.add("json")  -- for ufo treesitter folding
+
+-- Start treesitter highlighting (main branch does not auto-start it)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "go", "lua", "json" },
+  callback = function() pcall(vim.treesitter.start) end,
+})
+
+-- Folding UI: prefer treesitter, fall back to indent (works even without a parser)
+require("ufo").setup({
+  provider_selector = function()
+    return { "treesitter", "indent" }
+  end,
+})
 
 -- Auto-highlight symbol under cursor (LSP → treesitter → regex fallback)
 require("illuminate").configure({
@@ -197,6 +217,7 @@ wk.add({
   { "<leader>g", group = "git" },
   { "<leader>r", group = "rename" },
   { "<leader>s", group = "search/replace" },
+  { "<leader>z", group = "fold" },
 })
 
 -- LSP: gopls (nvim 0.11+ native API)
