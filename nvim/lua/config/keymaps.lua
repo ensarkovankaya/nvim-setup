@@ -61,6 +61,8 @@ map("n", "<leader>gd", ":DiffviewOpen<CR>",          { desc = "Diffview open" })
 map("n", "<leader>gh", ":DiffviewFileHistory %<CR>", { desc = "Current file history" })
 map("n", "<leader>gc", ":DiffviewClose<CR>",         { desc = "Diffview close" })
 map("n", "<leader>gp", ":Octo pr list<CR>",          { desc = "GitHub PRs (octo)" })
+map("n", "<leader>gv", ":Octo review browse<CR>",    { desc = "PR review view (no draft)" })
+map("n", "<leader>gr", ":Octo review start<CR>",     { desc = "PR review start (draft)" })
 
 -- Compare against a branch (Telescope branch picker, no checkout)
 -- Normal: whole file, native side-by-side split (gitsigns)
