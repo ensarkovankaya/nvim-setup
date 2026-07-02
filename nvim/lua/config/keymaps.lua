@@ -124,5 +124,23 @@ map("n", "<leader>zc", "zc",                                         { desc = "F
 map("n", "<leader>zR", function() require("ufo").openAllFolds() end,  { desc = "Open all folds" })
 map("n", "<leader>zM", function() require("ufo").closeAllFolds() end, { desc = "Close all folds" })
 
+-- JSON: format buffer with jq via <leader>= (safe: keeps content if JSON is invalid)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "json",
+  callback = function(ev)
+    map("n", "<leader>=", function()
+      local input = table.concat(vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false), "\n")
+      local out = vim.fn.systemlist({ "jq", "." }, input)
+      if vim.v.shell_error ~= 0 then
+        vim.notify("jq: invalid JSON, not formatted", vim.log.levels.ERROR)
+        return
+      end
+      local pos = vim.api.nvim_win_get_cursor(0)
+      vim.api.nvim_buf_set_lines(ev.buf, 0, -1, false, out)
+      pcall(vim.api.nvim_win_set_cursor, 0, pos)
+    end, { buffer = ev.buf, desc = "Format JSON (jq)" })
+  end,
+})
+
 -- Insert mode
 map("i", "jk", "<ESC>", { desc = "Exit insert mode" })

@@ -4,7 +4,7 @@
 #
 # What it does:
 #   1. Platform/distro/architecture detection
-#   2. System dependencies (git, curl, ripgrep, fd, compiler, clipboard tools)
+#   2. System dependencies (git, curl, ripgrep, fd, jq, compiler, clipboard tools)
 #   3. Neovim >= 0.11 (native vim.lsp API required)
 #   4. lazygit
 #   5. Node.js + npm  (for yaml-language-server)
@@ -171,12 +171,12 @@ pkg_install() {
 # System dependencies
 # ---------------------------------------------------------------------------
 install_base_deps() {
-  step "System dependencies (git, curl, ripgrep, fd, compiler, clipboard)"
+  step "System dependencies (git, curl, ripgrep, fd, jq, compiler, clipboard)"
   case "$PKG" in
     brew)
-      pkg_install git curl ripgrep fd ;;
+      pkg_install git curl ripgrep fd jq ;;
     apt)
-      pkg_install git curl unzip ripgrep fd-find build-essential \
+      pkg_install git curl unzip ripgrep fd-find jq build-essential \
                   xclip wl-clipboard fontconfig
       # Debian/Ubuntu: the binary is named fdfind -> create an fd alias
       if have fdfind && ! have fd; then
@@ -185,13 +185,13 @@ install_base_deps() {
         ok "fd -> fdfind symlink (~/.local/bin)"
       fi ;;
     dnf)
-      pkg_install git curl unzip ripgrep fd-find gcc gcc-c++ make \
+      pkg_install git curl unzip ripgrep fd-find jq gcc gcc-c++ make \
                   xclip wl-clipboard fontconfig ;;
     pacman)
-      pkg_install git curl unzip ripgrep fd base-devel \
+      pkg_install git curl unzip ripgrep fd jq base-devel \
                   xclip wl-clipboard fontconfig ;;
     zypper)
-      pkg_install git curl unzip ripgrep fd gcc gcc-c++ make \
+      pkg_install git curl unzip ripgrep fd jq gcc gcc-c++ make \
                   xclip wl-clipboard fontconfig ;;
   esac
   ok "Base packages done"
@@ -475,7 +475,7 @@ doctor() {
   step "Doctor — install summary"
   export PATH="${PATH}:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin"
   local b ver
-  for b in nvim git rg fd lazygit node npm go gopls yaml-language-server tree-sitter; do
+  for b in nvim git rg fd jq lazygit node npm go gopls yaml-language-server tree-sitter; do
     if have "$b"; then
       case "$b" in
         nvim) ver="$(nvim_version)" ;;
