@@ -53,18 +53,21 @@ ______________________________________________________________________
 
 `install.sh` installs all of these automatically. If installing manually:
 
-| Dependency                 | Why it's needed                                      |
-| -------------------------- | ---------------------------------------------------- |
-| **Neovim ≥ 0.11**          | `vim.lsp.config` / `vim.lsp.enable` native API       |
-| **git**                    | Cloning lazy.nvim and plugins, fugitive/diffview     |
-| **ripgrep (`rg`)**         | Telescope `live_grep` (text search)                  |
-| **fd**                     | Telescope `find_files` (fast file finding)           |
-| **C compiler** (gcc/clang) | Building treesitter parsers                          |
-| **lazygit**                | `lazygit.nvim` git UI                                |
-| **Node.js + npm**          | Installing `yaml-language-server`                    |
-| **Go**                     | Installing `gopls` (Go LSP)                          |
-| **Nerd Font**              | nvim-tree / lualine icon glyphs                      |
-| Clipboard (Linux)          | `xclip`/`wl-clipboard` — for `clipboard=unnamedplus` |
+| Dependency                 | Why it's needed                                                          |
+| -------------------------- | ------------------------------------------------------------------------ |
+| **Neovim ≥ 0.11**          | `vim.lsp.config` / `vim.lsp.enable` native API                           |
+| **git**                    | Cloning lazy.nvim and plugins, fugitive/diffview                         |
+| **ripgrep (`rg`)**         | Telescope `live_grep`, nvim-spectre find & replace                       |
+| **fd**                     | Telescope `find_files` (fast file finding)                               |
+| **jq**                     | JSON formatting (`<leader>=` in JSON buffers)                            |
+| **tree-sitter CLI**        | Compiling treesitter parsers (`go`/`lua`/`json`)                         |
+| **C compiler** (gcc/clang) | Backend for tree-sitter parser + fzf-native builds                       |
+| **lazygit**                | `lazygit.nvim` git UI                                                    |
+| **Node.js + npm**          | Installing `yaml-language-server`                                        |
+| **Go**                     | Installing `gopls` (Go LSP)                                              |
+| **Nerd Font**              | nvim-tree / lualine / octo icon glyphs                                   |
+| Clipboard (Linux)          | `xclip`/`wl-clipboard` — for `clipboard=unnamedplus`                     |
+| **gh** (GitHub CLI)        | `octo.nvim` PR review. Installed by the script; run `gh auth login` once |
 
 ______________________________________________________________________
 
@@ -95,10 +98,10 @@ The script is idempotent (safe to re-run — it skips what's already installed).
 
 02. **Homebrew** (macOS only) — installs it if missing.
 
-03. **System dependencies** — `git curl ripgrep fd` + a compiler (build-essential
-    / base-devel / gcc) + on Linux the clipboard tools (`xclip`, `wl-clipboard`)
-    and `fontconfig`. On Debian/Ubuntu the package is `fd-find` and the binary is
-    `fdfind`; the script creates a `~/.local/bin/fd` symlink.
+03. **System dependencies** — `git curl ripgrep fd jq` + a compiler
+    (build-essential / base-devel / gcc) + on Linux the clipboard tools (`xclip`,
+    `wl-clipboard`) and `fontconfig`. On Debian/Ubuntu the package is `fd-find` and
+    the binary is `fdfind`; the script creates a `~/.local/bin/fd` symlink.
 
 04. **Neovim ≥ 0.11** —
 
@@ -110,8 +113,9 @@ The script is idempotent (safe to re-run — it skips what's already installed).
       version is too old it warns to build from source.
       If the version is < 0.11 the install stops (native LSP API won't work).
 
-05. **lazygit** — from the package manager on macOS/Arch; on other Linux a GitHub
-    release binary (x86_64/arm64/armv6 by architecture).
+05. **lazygit** + **gh** (GitHub CLI, for octo.nvim) — from the package manager on
+    macOS / Arch / Fedora; on other Linux a GitHub release binary (by
+    architecture). Run `gh auth login` once to use octo.nvim.
 
 06. **Node.js + npm** — from the package manager if not present. Needed for
     `yaml-language-server`.
@@ -125,17 +129,21 @@ The script is idempotent (safe to re-run — it skips what's already installed).
     - `yaml-language-server`: `npm install -g`
       PATH lines are added idempotently to `~/.zshrc` / `~/.bashrc`.
 
-09. **Nerd Font** — JetBrainsMono. Cask on macOS, `~/.local/share/fonts` +
+09. **tree-sitter CLI** — needed to compile treesitter parsers. `brew install tree-sitter-cli` on macOS, the `tree-sitter-cli` package on Arch, else a
+    prebuilt binary from GitHub releases (no rust/node required).
+
+10. **Nerd Font** — JetBrainsMono. Cask on macOS, `~/.local/share/fonts` +
     `fc-cache` on Linux. **Auto-skipped on SSH/headless sessions** (install it on
     the machine running the terminal).
 
-10. **Config deployment** — any existing `~/.config/nvim` is moved to a
+11. **Config deployment** — any existing `~/.config/nvim` is moved to a
     timestamped backup, then symlinked (or copied with `--copy`).
 
-11. **Plugin bootstrap** — `nvim --headless +Lazy! restore` installs the pinned
-    commits from `lazy-lock.json`; the `go`/`lua` treesitter parsers are loaded.
+12. **Plugin bootstrap** — `nvim --headless +Lazy! restore` installs the pinned
+    commits from `lazy-lock.json`; the `go`/`lua`/`json` treesitter parsers are
+    compiled.
 
-12. **Doctor** — summarizes all binaries and versions.
+13. **Doctor** — summarizes all binaries and versions.
 
 ______________________________________________________________________
 
@@ -143,7 +151,8 @@ ______________________________________________________________________
 
 ```bash
 # 1) Prerequisites (example: macOS)
-brew install neovim git ripgrep fd lazygit node go
+brew install neovim git ripgrep fd jq tree-sitter-cli lazygit node go
+brew install gh && gh auth login                 # for octo.nvim PR review
 brew install --cask font-jetbrains-mono-nerd-font
 
 # 2) LSP servers
@@ -155,6 +164,9 @@ ln -s "$PWD/nvim" ~/.config/nvim                 # or: cp -R nvim ~/.config/nvim
 
 # 4) Open Neovim — lazy.nvim installs the plugins automatically
 nvim
+
+# 5) Inside Neovim, compile the treesitter parsers (needs the tree-sitter CLI)
+:lua require("nvim-treesitter").install({ "go", "lua", "json" })
 ```
 
 On Debian/Ubuntu/Raspberry Pi OS use `apt` instead of `brew`; since the `apt`
@@ -165,25 +177,29 @@ ______________________________________________________________________
 
 ## Plugins — what does each do?
 
-| Plugin                                  | Purpose                                                                                                              |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **lazy.nvim**                           | Plugin manager. `init.lua` bootstraps it on first launch; `lazy-lock.json` pins versions.                            |
-| **catppuccin/nvim**                     | Color theme (`colorscheme catppuccin`). Loaded before others with `priority=1000`.                                   |
-| **nvim-tree.lua**                       | File explorer on the left. Width 35, shows dotfiles, marks git status, follows the open file / working directory.    |
-| **telescope.nvim** (+ **plenary.nvim**) | Fuzzy finder: find files, search text (`rg`), search within a buffer. LSP references are also listed via Telescope.  |
-| **nvim-treesitter**                     | Accurate syntax highlighting and code parsing. `build=:TSUpdate`. The config registers the `go` and `lua` languages. |
-| **lualine.nvim**                        | Bottom status line (mode, file, git, position).                                                                      |
-| **gitsigns.nvim**                       | Inline git signs (added/changed/removed) + **current line blame** (author + time at end of line).                    |
-| **vim-fugitive**                        | Classic git command interface (`:Git …`); also the foundation for diffview and other tools.                          |
-| **lazygit.nvim**                        | Full-screen `lazygit` TUI from inside Neovim. Lazy-loaded via `cmd`.                                                 |
-| **diffview.nvim**                       | Advanced diff and file-history views (`:DiffviewOpen`, file history).                                                |
-| **nvim-cmp**                            | Autocompletion engine. Sources: LSP, snippets, buffer, path.                                                         |
-| ↳ **cmp-nvim-lsp**                      | LSP completion source + advertises LSP capabilities to cmp.                                                          |
-| ↳ **cmp-buffer / cmp-path**             | Completion from open-buffer words and file paths.                                                                    |
-| ↳ **LuaSnip** + **cmp_luasnip**         | Snippet engine and its cmp integration.                                                                              |
-| **which-key.nvim**                      | Popup showing keybinding hints when you press `<leader>`. `git`/`rename` groups defined.                             |
-| **SchemaStore.nvim**                    | Provides ready-made JSON/YAML schemas (k8s, GitHub Actions, OpenAPI…) to yaml-language-server.                       |
-| **csvview.nvim**                        | Renders CSV/TSV files as an aligned table; auto-enabled on open, disables line wrap.                                 |
+| Plugin                                                             | Purpose                                                                                                                                                                                                    |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **lazy.nvim**                                                      | Plugin manager. `init.lua` bootstraps it on first launch; `lazy-lock.json` pins versions.                                                                                                                  |
+| **catppuccin/nvim**                                                | Color theme (`colorscheme catppuccin`). Loaded before others with `priority=1000`.                                                                                                                         |
+| **nvim-tree.lua**                                                  | File explorer on the left. Width 35, shows dotfiles, marks git status, follows the open file / working directory.                                                                                          |
+| **telescope.nvim** (+ **plenary.nvim** + **telescope-fzf-native**) | Fuzzy finder: files, live grep (`rg`), buffer search, **LSP symbols** (`<leader>fs`/`fo`), branch picker. fzf-native adds prompt filters (`!exclude` `'exact` `^prefix`). LSP references also listed here. |
+| **nvim-spectre**                                                   | Project-wide / current-file find & replace UI (`<leader>s…`). Uses ripgrep + sed.                                                                                                                          |
+| **nvim-treesitter**                                                | Accurate syntax highlighting and code parsing. `build=:TSUpdate`. Registers `go`/`lua`/`json`; highlighting is auto-started per filetype (needs the tree-sitter CLI).                                      |
+| **nvim-ufo** (+ **promise-async**)                                 | Code folding with rich previews (`{ … } N lines`); folds JSON keys etc. via treesitter, falling back to indent.                                                                                            |
+| **vim-illuminate**                                                 | Auto-highlights other uses of the symbol under the cursor (LSP → treesitter → regex).                                                                                                                      |
+| **lualine.nvim**                                                   | Bottom status line (mode, file, git, position).                                                                                                                                                            |
+| **gitsigns.nvim**                                                  | Inline git signs (added/changed/removed) + **current line blame** (author + time at end of line).                                                                                                          |
+| **vim-fugitive**                                                   | Classic git command interface (`:Git …`); also the foundation for diffview and other tools.                                                                                                                |
+| **lazygit.nvim**                                                   | Full-screen `lazygit` TUI from inside Neovim. Lazy-loaded via `cmd`.                                                                                                                                       |
+| **diffview.nvim**                                                  | Advanced diff and file-history views (`:DiffviewOpen`, file history).                                                                                                                                      |
+| **octo.nvim** (+ **nvim-web-devicons**)                            | GitHub PR/issue review inside Neovim (`<leader>gp`/`gv`/`gr`). Uses the `gh` CLI + Telescope picker + diffview.                                                                                            |
+| **nvim-cmp**                                                       | Autocompletion engine. Sources: LSP, snippets, buffer, path.                                                                                                                                               |
+| ↳ **cmp-nvim-lsp**                                                 | LSP completion source + advertises LSP capabilities to cmp.                                                                                                                                                |
+| ↳ **cmp-buffer / cmp-path**                                        | Completion from open-buffer words and file paths.                                                                                                                                                          |
+| ↳ **LuaSnip** + **cmp_luasnip**                                    | Snippet engine and its cmp integration.                                                                                                                                                                    |
+| **which-key.nvim**                                                 | Popup showing keybinding hints when you press `<leader>`. `git`/`rename`/`search-replace`/`fold` groups defined.                                                                                           |
+| **SchemaStore.nvim**                                               | Provides ready-made JSON/YAML schemas (k8s, GitHub Actions, OpenAPI…) to yaml-language-server.                                                                                                             |
+| **csvview.nvim**                                                   | Renders CSV/TSV files as an aligned table; auto-enabled on open, disables line wrap.                                                                                                                       |
 
 ______________________________________________________________________
 
@@ -209,22 +225,31 @@ ______________________________________________________________________
 
 Leader key: **`<Space>`**
 
-| Keymap                                                        | Description                                      |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| `<leader>w` / `<leader>q`                                     | Save / quit                                      |
-| `<C-h/j/k/l>`                                                 | Move between windows                             |
-| `jk` (insert)                                                 | Exit insert mode (ESC)                           |
-| `<leader>e` / `<leader>f`                                     | Toggle / focus file tree                         |
-| `<leader>cd`                                                  | Change cwd to the directory selected in the tree |
-| `<leader>ff`                                                  | Find files (Telescope)                           |
-| `<leader>fg`                                                  | Search text — live grep                          |
-| `<leader>/`                                                   | Search within the open buffer                    |
-| `<leader>gg` / `<leader>gf`                                   | LazyGit / current file's repo                    |
-| `<leader>gd` / `<leader>gc`                                   | Diffview open / close                            |
-| `<leader>gh`                                                  | Current file's git history                       |
-| `<leader>gb`                                                  | Toggle line blame                                |
-| `<leader>y` (visual, tmux)                                    | Copy selection to the tmux buffer                |
-| `gd` `gr` `K` `<leader>rn` `<leader>ca` `<leader>d` `[d` `]d` | LSP (see above)                                  |
+| Keymap                                                        | Description                                              |
+| ------------------------------------------------------------- | -------------------------------------------------------- |
+| `<leader>w` / `<leader>q`                                     | Save / quit                                              |
+| `<C-h/j/k/l>`                                                 | Move between windows                                     |
+| `jk` (insert)                                                 | Exit insert mode (ESC)                                   |
+| `<leader>e` / `<leader>f`                                     | Toggle / focus file tree                                 |
+| `<leader>cd`                                                  | Change cwd to the directory selected in the tree         |
+| `<leader>ff`                                                  | Find files (Telescope)                                   |
+| `<leader>fg`                                                  | Search text — live grep                                  |
+| `<leader>fs` / `<leader>fo`                                   | LSP symbols — workspace / current file                   |
+| `<leader>/`                                                   | Search within the open buffer                            |
+| `<leader>sr` / `<leader>sf`                                   | Find & replace — project / current file (spectre)        |
+| `<leader>sw`                                                  | Replace word under cursor (visual: selection)            |
+| `<leader>gg` / `<leader>gf`                                   | LazyGit / current file's repo                            |
+| `<leader>gd` / `<leader>gc`                                   | Diffview open / close                                    |
+| `<leader>gh`                                                  | Current file's git history                               |
+| `<leader>gb`                                                  | Toggle line blame                                        |
+| `<leader>gB`                                                  | Diff file vs branch (visual: only the selected lines)    |
+| `<leader>gp`                                                  | GitHub PR list (octo)                                    |
+| `<leader>gv` / `<leader>gr`                                   | PR review — view (no draft) / start (draft)              |
+| `za` / `zo` / `zc`                                            | Fold toggle / open / close                               |
+| `zR` / `zM`                                                   | Open / close all folds (also mirrored under `<leader>z`) |
+| `<leader>=` (JSON)                                            | Format buffer with jq                                    |
+| `<leader>y` (visual, tmux)                                    | Copy selection to the tmux buffer                        |
+| `gd` `gr` `K` `<leader>rn` `<leader>ca` `<leader>d` `[d` `]d` | LSP (see above)                                          |
 
 ______________________________________________________________________
 
@@ -255,7 +280,13 @@ ______________________________________________________________________
 - **Telescope `live_grep` empty** → ripgrep (`rg`) is not installed.
 - **`find_files` slow / not working** → `fd` is missing; on Debian it may be
   installed as `fdfind`, and `~/.local/bin/fd` must be on PATH.
-- **treesitter parser missing** → inside Neovim run `:TSInstall go lua`.
+- **treesitter parser missing / no syntax highlight** → the `tree-sitter` CLI
+  must be installed (`brew install tree-sitter-cli`), then run
+  `:lua require('nvim-treesitter').install({'go','lua','json'})` inside Neovim.
+- **octo PR commands fail / "not authenticated"** → install the GitHub CLI and
+  run `gh auth login` (octo.nvim talks to GitHub via `gh`).
+- **`<leader>=` does nothing / "invalid JSON"** → `jq` is missing, or the buffer
+  isn't valid JSON (the keymap refuses to format broken JSON and keeps content).
 - **gopls not found** → `~/go/bin` is not on PATH. Add
   `export PATH="$HOME/go/bin:$PATH"` (the script adds it to `.zshrc`/`.bashrc`).
 - **Clipboard (yank) not synced with the system (Linux)** → install `xclip`

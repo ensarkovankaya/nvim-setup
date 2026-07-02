@@ -6,7 +6,7 @@
 #   1. Platform/distro/architecture detection
 #   2. System dependencies (git, curl, ripgrep, fd, jq, compiler, clipboard tools)
 #   3. Neovim >= 0.11 (native vim.lsp API required)
-#   4. lazygit
+#   4. lazygit + GitHub CLI (gh, for octo.nvim)
 #   5. Node.js + npm  (for yaml-language-server)
 #   6. Go            (for gopls)
 #   7. LSP servers (gopls, yaml-language-server) + tree-sitter CLI
@@ -127,6 +127,7 @@ go_arch()      { case "$ARCH_RAW" in x86_64|amd64) echo amd64;; aarch64|arm64) e
 nvim_arch()    { case "$ARCH_RAW" in x86_64|amd64) echo x86_64;; aarch64|arm64) echo arm64;; *) echo "";; esac; }
 lazygit_arch() { case "$ARCH_RAW" in x86_64|amd64) echo x86_64;; aarch64|arm64) echo arm64;; armv7l|armv6l) echo armv6;; *) echo "";; esac; }
 tree_sitter_arch() { case "$ARCH_RAW" in x86_64|amd64) echo x64;; aarch64|arm64) echo arm64;; armv7l) echo arm;; i686|i386) echo x86;; *) echo "";; esac; }
+gh_arch()      { case "$ARCH_RAW" in x86_64|amd64) echo amd64;; aarch64|arm64) echo arm64;; armv7l|armv6l) echo armv6;; i686|i386) echo 386;; *) echo "";; esac; }
 
 # ---------------------------------------------------------------------------
 # Homebrew (macOS)
@@ -263,6 +264,36 @@ install_lazygit() {
   as_root install /tmp/lazygit /usr/local/bin/lazygit
   rm -f /tmp/lazygit.tar.gz /tmp/lazygit
   ok "lazygit ready"
+}
+
+# ---------------------------------------------------------------------------
+# GitHub CLI (gh) — required by octo.nvim; authentication (`gh auth login`) is
+# interactive, so the user must run it once after install.
+# ---------------------------------------------------------------------------
+install_gh() {
+  step "GitHub CLI (gh) — for octo.nvim PR review"
+  have gh && { ok "gh installed"; return; }
+  if [ "$OS" = "macos" ]; then
+    pkg_install gh; ok "gh ready"; return
+  fi
+  case "$PKG" in
+    pacman) pkg_install github-cli && { ok "gh ready"; return; } ;;
+    dnf)    pkg_install gh && { ok "gh ready"; return; } ;;
+  esac
+  # apt/zypper/others: prebuilt binary from GitHub releases (apt repo needs extra setup)
+  local arch ver url
+  arch="$(gh_arch)"
+  [ -z "$arch" ] && { warn "gh: no binary for $ARCH_RAW; install it manually"; return; }
+  ver="$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest \
+        | grep -m1 '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/')"
+  [ -z "$ver" ] && { warn "Could not get gh version, skipping"; return; }
+  url="https://github.com/cli/cli/releases/download/v${ver}/gh_${ver}_linux_${arch}.tar.gz"
+  info "Downloading: gh v$ver ($arch)"
+  curl -fsSL "$url" -o /tmp/gh.tar.gz || { warn "Failed to download gh"; return; }
+  tar -xzf /tmp/gh.tar.gz -C /tmp
+  as_root install "/tmp/gh_${ver}_linux_${arch}/bin/gh" /usr/local/bin/gh
+  rm -rf /tmp/gh.tar.gz "/tmp/gh_${ver}_linux_${arch}"
+  have gh && ok "gh ready" || warn "gh install failed"
 }
 
 # ---------------------------------------------------------------------------
@@ -475,7 +506,7 @@ doctor() {
   step "Doctor — install summary"
   export PATH="${PATH}:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin"
   local b ver
-  for b in nvim git rg fd jq lazygit node npm go gopls yaml-language-server tree-sitter; do
+  for b in nvim git rg fd jq lazygit gh node npm go gopls yaml-language-server tree-sitter; do
     if have "$b"; then
       case "$b" in
         nvim) ver="$(nvim_version)" ;;
@@ -504,6 +535,7 @@ main() {
     install_base_deps
     install_neovim
     install_lazygit
+    install_gh
     install_node
     install_go
   else
