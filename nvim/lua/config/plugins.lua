@@ -128,6 +128,22 @@ require("nvim-tree").setup({
   },
 })
 
+-- nvim-tree: always-visible key hints in the window bar
+-- (Turkish keyboard: '?' help needs shift, so keep the common actions on screen)
+-- BufWinEnter + schedule: fires on every open (buffer is reused across toggles)
+-- and runs after nvim-tree finishes rendering, so it targets the right window.
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  callback = function(ev)
+    if vim.bo[ev.buf].filetype ~= "NvimTree" then return end
+    vim.schedule(function()
+      local win = vim.fn.bufwinid(ev.buf)
+      if win ~= -1 then
+        vim.wo[win].winbar = " a:new  r:rename  d:del  x/c/p:move  ?:help "
+      end
+    end)
+  end,
+})
+
 -- Telescope setup
 require("telescope").setup({
   extensions = {
